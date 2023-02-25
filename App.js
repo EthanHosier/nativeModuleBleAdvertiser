@@ -4,7 +4,7 @@ import { NativeModules, NativeEventEmitter} from 'react-native'
 import { BleManager } from 'react-native-ble-plx'
 
 const BleAdvertiser = NativeModules.BleAdvertiser;
-BleAdvertiser.initialize()
+//BleAdvertiser.initialize()
 const BleAdvertiserEvents = new NativeEventEmitter(NativeModules.BleAdvertiser);
 
 const bleCentral = new BleManager();
@@ -12,31 +12,25 @@ const bleCentral = new BleManager();
 const SERVICE = "8896d8ba-29ff-4a49-8e3e-356e9bc106fa" //matching btTest2
 const CHARACTERISTIC = "c5ac1ec8-b3b2-11ed-afa1-0242ac120002"
 
-/*
-TODO:
-1. TRY THE "peripheralManagerDidStartAdvertising(_:error:)" https://developer.apple.com/documentation/corebluetooth/cbperipheralmanagerdelegate/1393321-peripheralmanagerdidstartadverti    sendEvent("..", error ?? "success")
-2. Check all the bluetooth permissions are correct
-3. Check the code given (by chat gpt) matches the "send data w/  ble" in swift docs
-4. Check that am actually broadcasting signal correctly (check that device appears at all, then that formatted correctly etc)  - use bluetooth sniffer app etc??
-*/
-console.log(BleAdvertiser)
+
 const App = () => {
 
     useEffect(() => {
         BleAdvertiserEvents.addListener("BleStatus", console.log)
-        BleAdvertiserEvents.addListener("BroadcastingStatus", console.log)
+        BleAdvertiserEvents.addListener("AdvertisingStatus", console.log)
         
         return () => {
-          BleAdvertiserEvents.removeAllListeners();
+          BleAdvertiserEvents.removeAllListeners("BleStatus")
+          BleAdvertiserEvents.removeAllListeners("AdvertisingStatus")
         }
     },[])
 
     const startAdvertising = () => {
-      BleAdvertiser.startBroadcasting(SERVICE, CHARACTERISTIC);
+      BleAdvertiser.startAdvertising(SERVICE, CHARACTERISTIC);
     }
 
     const stopAdvertising = () => {
-      BleAdvertiser.stopBroadcasting();
+      BleAdvertiser.stopAdvertising();
     }
 
     const handleCentral = () => {

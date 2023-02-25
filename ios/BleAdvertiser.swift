@@ -6,7 +6,7 @@
 //
 
 
-//######### TODO: add error cases to failed broacasting possibility - maybe make use of callback?? #######
+
 import Foundation
 import CoreBluetooth
 
@@ -18,9 +18,28 @@ class BleAdvertiser: RCTEventEmitter, CBCentralManagerDelegate, CBPeripheralMana
   private var service: CBMutableService?
   private var centralManager: CBCentralManager?
   
+  override init(){
+    super.init()
+    initialize()
+  }
+  
   //TODO: MAKE THIS RETURN A PROMISE IF SUCCEEDS
-  @objc func startBroadcasting(_ serviceId: String, characteristicId: String) {
+  @objc func startAdvertising(_ serviceId: String, characteristicId: String) {
         
+      // Check if peripheral manager is available
+      guard let peripheralManager = peripheralManager else {
+          sendEvent(withName: "AdvertisingStatus", body: ["Error"])
+          print("Failed to start advertising - peripheral manager not available")
+          return
+      }
+    
+      // Check if service is already being advertised
+      if peripheralManager.isAdvertising {
+          sendEvent(withName: "AdvertisingStatus", body: ["Already Advertising"])
+          print("Failed to start advertising - service already being advertised")
+          return
+      }
+    
       // Create a service UUID and characteristic UUID
       let serviceUUID = CBUUID(string: serviceId)
       let characteristicUUID = CBUUID(string: characteristicId)
@@ -33,43 +52,36 @@ class BleAdvertiser: RCTEventEmitter, CBCentralManagerDelegate, CBPeripheralMana
                                                 permissions: [.readable, .writeable])
       service = CBMutableService(type: serviceUUID, primary: true)
       service?.characteristics = [characteristic!]
-      sendEvent(withName: "BroadcastingStatus", body: ["\(service!)"])
+      //sendEvent(withName: "AdvertisingStatus", body: ["\(service!)"])
 
-      // Check if peripheral manager is available
-      guard let peripheralManager = peripheralManager else {
-          sendEvent(withName: "BroadcastingStatus", body: ["Failed to start broadcasting - peripheral manager not available"])
-          return
-      }
       
-      // Check if service is already being advertised
-      if peripheralManager.isAdvertising {
-          sendEvent(withName: "BroadcastingStatus", body: ["Failed to start broadcasting - service already being advertised"])
-          return
-      }
+      
+      
       
       // Check if peripheral manager is powered on
       guard peripheralManager.state == .poweredOn else {
-          sendEvent(withName: "BroadcastingStatus", body: ["Failed to start broadcasting - peripheral manager is not powered on"])
+        sendEvent(withName: "AdvertisingStatus", body: ["Error"])
+        print("Failed to start advertising - peripheral manager is not powered on")
           return
       }
       
-      // Start broadcasting the service
+      // Start advertising the service
       peripheralManager.add(service!)
       peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [serviceUUID]])
 
-      sendEvent(withName: "BroadcastingStatus", body: ["Started Broadcasting"])
+      
   }
   
-  @objc func initialize(){
+  func initialize(){
     self.peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
   }
   
-  @objc func stopBroadcasting() {
-      // Stop broadcasting the service
+  @objc func stopAdvertising() {
+      // Stop advertising the service
       peripheralManager?.stopAdvertising()
       peripheralManager?.remove(service!)
     
-      sendEvent(withName: "BroadcastingStatus", body: ["Stopped Broadcasting"])
+      sendEvent(withName: "AdvertisingStatus", body: ["Stopped Advertising"])
 
   }
   
@@ -86,18 +98,23 @@ class BleAdvertiser: RCTEventEmitter, CBCentralManagerDelegate, CBPeripheralMana
   }
   
   override func supportedEvents() -> [String]! {
-      return ["BroadcastingStatus", "BleStatus"];
+      return ["AdvertisingStatus", "BleStatus"];
   }
   
   func peripheralManagerDidStartAdvertising(
       _ peripheral: CBPeripheralManager,
       error: Error?
   ){
-    sendEvent(withName: "BroadcastingStatus", body: ["Error Broadcasting: \(error.debugDescription)"])
+    
+    if let error = error{
+      sendEvent(withName: "AdvertisingStatus", body: ["Error"])
+      print("Advertising failed with \(error.localizedDescription)")
+      return
+    }
+    sendEvent(withName: "AdvertisingStatus", body: ["Started Advertising"])
   }
   
   func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
-    print("YEAHHH")
     switch peripheral.state {
     case .unknown:
       sendEvent(withName: "BleStatus", body: ["unknown"])

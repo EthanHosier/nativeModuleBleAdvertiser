@@ -12,8 +12,8 @@
 
 @interface RCT_EXTERN_MODULE(BleAdvertiser, RCTEventEmitter)
 
-RCT_EXTERN_METHOD(startBroadcasting: (NSString *)serviceId characteristicId: (NSString *)characteristicId)
-RCT_EXTERN_METHOD(stopBroadcasting)
+RCT_EXTERN_METHOD(startAdvertising: (NSString *)serviceId characteristicId: (NSString *)characteristicId)
+RCT_EXTERN_METHOD(stopAdvertising)
 RCT_EXTERN_METHOD(initialize)
 
 @end
